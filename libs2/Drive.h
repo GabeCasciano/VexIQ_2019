@@ -1,10 +1,5 @@
-#include "libs/conversions.h"
-
-typedef struct PID{
-	float Kp, Ki, Kd;
-	float error, accum, last;
-	float target, output;
-}PID_Values;
+#include "../libs/conversions.h"
+#include "PID.h"
 
 typedef struct wheels{
 		PID_Values left_pid, right_pid;
@@ -19,17 +14,7 @@ typedef struct gyro{
 Wheels wheel_pid;
 Gyro_Values gyro_vals;
 
-float wheelDiameter
-
-//used internally to calculate PID
-void calculate(PID_Values *pid, float input){
-	pid->error = pid->target - input;
-	pid->output = pid->Kp * pid->error;
-	pid->accum += pid->error * pid->Ki;
-	pid->output += pid->accum;
-	pid->output += (pid->last - pid->error) * pid->Kd;
-	pid->last = pid->error;
-}
+float wheelDiameter;
 
 // Init for the gyro structure
 void Drive_Gyro_Init(float Kp, float Ki, float Kd, int gyro){
