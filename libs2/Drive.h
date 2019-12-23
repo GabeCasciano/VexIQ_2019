@@ -2,13 +2,14 @@
 #include "PID.h"
 
 typedef struct wheels{
-		PID_Values left_pid, right_pid;
-		int left_motor, right_motor;
+	PID_Values left_pid, right_pid;
+	int left_motor, right_motor;
 }Wheels;
 
 typedef struct gyro{
 	PID_Values gyro_pid;
 	int gyro_port;
+	float momentum;
 }Gyro_Values;
 
 Wheels wheel_pid;
@@ -23,6 +24,7 @@ void Drive_Gyro_Init(float Kp, float Ki, float Kd, int gyro){
 	gyro_vals.gyro_pid.Kd = Kd;
 
 	gyro_vals.gyro_port = gyro-1;
+	gyro_vals.momentum = 2;
 }
 
 //Init for the drive structure
@@ -66,6 +68,8 @@ void Drive_Straight(float distance, float speed){
 		motor[wheel_pid.left_motor] = wheel_pid.left_pid.output;
 
 	}while((abs(wheel_pid.left_pid.error) + abs(wheel_pid.right_pid.error))/2 > 1);
+	motor[wheel_pid.right_motor] = 0;
+	motor[wheel_pid.left_motor] = 0;
 }
 
 void Drive_Straight_Distance(float distance, float speed){
@@ -76,7 +80,7 @@ void Drive_Straight_Distance(float distance, float speed){
 //angle, how far in degrees (-180->180)
 //speed, how fast (0->100);
 void Drive_Turn_Norm(float angle, float speed){
-	gyro_vals.gyro_pid.target = angle;
+	gyro_vals.gyro_pid.target = angle - gyro_vals.momentum;
 	resetGyro(gyro_vals.gyro_port);
 
 	do{
@@ -88,7 +92,9 @@ void Drive_Turn_Norm(float angle, float speed){
 		motor[wheel_pid.right_motor] = gyro_vals.gyro_pid.output;
 		motor[wheel_pid.left_motor] = -gyro_vals.gyro_pid.output;
 
-	}while(abs(gyro_vals.gyro_pid.error) > .5);
+	}while(abs(gyro_vals.gyro_pid.error) > 1);
+	motor[wheel_pid.right_motor] = 0;
+	motor[wheel_pid.left_motor] = 0;
 }
 
 //1 Whl turn
@@ -107,12 +113,14 @@ void Drive_Turn_1Whl(float angle, float speed){
 		if(sgn(angle) > 0){
 			motor[wheel_pid.right_motor] = gyro_vals.gyro_pid.output;
 			motor[wheel_pid.left_motor] = 0;
-		}else if(sgn(angle) < 0){
+			}else if(sgn(angle) < 0){
 			motor[wheel_pid.left_motor] = -gyro_vals.gyro_pid.output;
 			motor[wheel_pid.right_motor] = 0;
 		}
 
-	}while(abs(gyro_vals.gyro_pid.error) > .5);
+	}while(abs(gyro_vals.gyro_pid.error) > 1);
+	motor[wheel_pid.right_motor] = 0;
+	motor[wheel_pid.left_motor] = 0;
 }
 
 //2 Whl turn
@@ -131,12 +139,14 @@ void Drive_Turn_2Whl(float angle, float speed, float turnRatio){
 		if(abs(gyro_vals.gyro_pid.output) >= speed)
 			gyro_vals.gyro_pid.output = sgn(gyro_vals.gyro_pid.output) * speed;
 
-		if(sgn(angle) > 0){
+		if(angle > 0){
 			motor[wheel_pid.right_motor] = gyro_vals.gyro_pid.output;
 			motor[wheel_pid.left_motor] = gyro_vals.gyro_pid.output * turnRatio;
-		}else if(sgn(angle) < 0){
+			}else if(angle < 0){
 			motor[wheel_pid.left_motor] = gyro_vals.gyro_pid.output;
 			motor[wheel_pid.right_motor] = gyro_vals.gyro_pid.output * turnRatio;
 		}
-	}while(abs(gyro_vals.gyro_pid.error) > .5);
+	}while(abs(gyro_vals.gyro_pid.error) > 1);
+	motor[wheel_pid.right_motor] = 0;
+	motor[wheel_pid.left_motor] = 0;
 }
