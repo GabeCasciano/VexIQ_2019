@@ -2,9 +2,9 @@
 #include "PID.h"
 
 #define ZERO_POSITION 0
-#define LIFT_CUBE 550
+#define LIFT_CUBE 620
 #define LOW_PLATFORM 1000
-#define HIGH_PLATFORM 1230
+#define HIGH_PLATFORM 1300
 
 #define SMALL_ARM_UP 150
 #define SMALL_ARM_DOWN -5
@@ -56,13 +56,12 @@ void Arm_Init(float Kp, float Ki, float Kd, int arm1, int arm2){
 
 void Arm_Move(float position, float speed){
 	arm_vals.arm_pid.target = position;
-
+	int temp = 0;
 	do{
 		calculate(&arm_vals.arm_pid, getMotorEncoder(arm_vals.arm_port));
 
 		if(abs(arm_vals.arm_pid.output) >= speed)
 			arm_vals.arm_pid.output = sgn(arm_vals.arm_pid.output) * speed;
-
 		motor[arm_vals.arm_port] = arm_vals.arm_pid.output;
 	}while(abs(arm_vals.arm_pid.error) > 2);
 	motor[arm_vals.arm_port] = 0

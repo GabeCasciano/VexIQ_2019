@@ -49,13 +49,19 @@ void Drive_Init(float Kp, float Ki, float Kd, int left, int right, float diamete
 //Distance, how far in encoder ticks
 //speed, how fast (0->100);
 void Drive_Straight(float distance, float speed){
+	int heading = 0;
+
 	wheel_pid.left_pid.target = distance;
 	wheel_pid.right_pid.target = distance;
 
 	resetMotorEncoder(wheel_pid.left_motor);
 	resetMotorEncoder(wheel_pid.right_motor);
 
+	resetGyro(gyro_vals.gyro_port);
+
 	do{
+		int heading_correction = (heading - getGyroDegrees(gyro_vals.gyro_port))*2;//janky steering correction
+
 		calculate(&wheel_pid.left_pid, getMotorEncoder(wheel_pid.left_motor));
 		calculate(&wheel_pid.right_pid, getMotorEncoder(wheel_pid.right_motor));
 
@@ -64,10 +70,10 @@ void Drive_Straight(float distance, float speed){
 		if(abs(wheel_pid.right_pid.output) >= speed)
 			wheel_pid.right_pid.output = sgn(wheel_pid.right_pid.output) * speed;
 
-		motor[wheel_pid.right_motor] = wheel_pid.right_pid.output;
-		motor[wheel_pid.left_motor] = wheel_pid.left_pid.output;
+		motor[wheel_pid.right_motor] = wheel_pid.right_pid.output + heading_correction;
+		motor[wheel_pid.left_motor] = wheel_pid.left_pid.output - heading_correction;
 
-	}while((abs(wheel_pid.left_pid.error) + abs(wheel_pid.right_pid.error))/2 > 1);
+	}while((abs(wheel_pid.left_pid.error) + abs(wheel_pid.right_pid.error))/2 > 2);
 	motor[wheel_pid.right_motor] = 0;
 	motor[wheel_pid.left_motor] = 0;
 }
@@ -100,7 +106,7 @@ void Drive_Turn_Norm(float angle, float speed){
 //1 Whl turn
 //angle, how far in degrees (-180->180) (sign determines which wheel turns)
 //speed, how fast (0->100);
-void Drive_Turn_1Whl(float angle, float speed){
+void Drive_Turn_1Whl(float angle, float speed, bool reverse){
 	gyro_vals.gyro_pid.target = angle;
 	resetGyro(gyro_vals.gyro_port);
 
@@ -109,13 +115,22 @@ void Drive_Turn_1Whl(float angle, float speed){
 
 		if(abs(gyro_vals.gyro_pid.output) >= speed)
 			gyro_vals.gyro_pid.output = sgn(gyro_vals.gyro_pid.output) * speed;
-
-		if(sgn(angle) > 0){
-			motor[wheel_pid.right_motor] = gyro_vals.gyro_pid.output;
-			motor[wheel_pid.left_motor] = 0;
-			}else if(sgn(angle) < 0){
-			motor[wheel_pid.left_motor] = -gyro_vals.gyro_pid.output;
-			motor[wheel_pid.right_motor] = 0;
+		if(!reverse){
+			if(sgn(angle) > 0){
+				motor[wheel_pid.right_motor] = gyro_vals.gyro_pid.output;
+				motor[wheel_pid.left_motor] = 0;
+				}else if(sgn(angle) < 0){
+				motor[wheel_pid.left_motor] = -gyro_vals.gyro_pid.output;
+				motor[wheel_pid.right_motor] = 0;
+			}
+			}else{
+			if(sgn(angle) > 0){
+				motor[wheel_pid.left_motor] = -gyro_vals.gyro_pid.output;
+				motor[wheel_pid.right_motor] = 0;
+				}else if(sgn(angle) < 0){
+				motor[wheel_pid.right_motor] = gyro_vals.gyro_pid.output;
+				motor[wheel_pid.left_motor] = 0;
+			}
 		}
 
 	}while(abs(gyro_vals.gyro_pid.error) > 1);
