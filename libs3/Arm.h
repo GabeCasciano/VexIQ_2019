@@ -9,10 +9,17 @@
 #define SMALL_ARM_UP 150
 #define SMALL_ARM_DOWN -5
 
+typedef struct ARM{
+	PID_Values arm_pid;
+	int arm_port, small_arm_port;
+}Arm_Values;
+
+Arm_Values arm_vals;
+
 void Arm_Move(float position, float speed);
 void Arm_Move_Small(bool position);
 
-bool finishedFlag = false;
+bool Arm_finishedFlag = false;
 
 void Arm_Reset(){
 	//Reset Normal Arm
@@ -48,9 +55,9 @@ bool* Arm_Init(float Kp, float Ki, float Kd, int arm1, int arm2){
 	setMotorBrakeMode(arm_vals.arm_port, motorHold);
 	setMotorBrakeMode(arm_vals.small_arm_port, motorHold);
 
-	finishedFlag = false;
+	Arm_finishedFlag = false;
 
-	return &finishedFlag
+	return &Arm_finishedFlag;
 }
 
 void Arm_Move(float position, float speed){
@@ -62,7 +69,12 @@ void Arm_Move(float position, float speed){
 			arm_vals.arm_pid.output = sgn(arm_vals.arm_pid.output) * speed;
 		motor[arm_vals.arm_port] = arm_vals.arm_pid.output;
 	}while(abs(arm_vals.arm_pid.error) > 2);
-	motor[arm_vals.arm_port] = 0
+	motor[arm_vals.arm_port] = 0;
+}
+
+void New_Arm_Move(int position){
+	arm_vals.arm_pid.target = position;
+	Arm_finishedFlag = false;
 }
 
 task Arm_Move(){
@@ -72,8 +84,9 @@ task Arm_Move(){
 		motor[arm_vals.arm_port] = arm_vals.arm_pid.output;
 		releaseCPU();
 		EndTimeSlice();
-	}while(abs() > 2);
+	}while(abs(arm_vals.arm_pid.error) > 2);
 	motor[arm_vals.arm_port] = 0;
+	Arm_finishedFlag = true;
 }
 
 void Arm_Move_Small(bool position){
@@ -88,4 +101,5 @@ void Arm_Move_Small(bool position){
 void New_Arm_Target(int position, int speed){
 	arm_vals.arm_pid.target = position;
 	arm_vals.arm_pid.maximum = speed;
+	Arm_finishedFlag = false;
 }

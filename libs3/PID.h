@@ -13,7 +13,7 @@ void calculate(PID_Values *pid, float input){
 	pid->output += (pid->last - pid->error) * pid->Kd;
 	pid->last = pid->error;
 
-	if(abs(pid->output) > maximum)
-		pid->output = sgn(pid->output) * maximum;
+	if(abs(pid->output) > pid->maximum)
+		pid->output = sgn(pid->output) * pid->maximum;
 
 }
